@@ -1,0 +1,147 @@
+from typing import Annotated
+
+from fastapi import APIRouter, Query, Path, HTTPException, Body, status
+
+from app.dependencies import get_db
+from app.schemas.genre import (
+    GenresResponse,
+    GenreCreate,
+    GenreResponse,
+    GenreUpdate,
+    GenreBookItemResponse,
+    GenreBookListResponse,
+)
+from app.schemas.author import AuthorResponse
+from app.crud.genre import (
+    get_genres,
+    create_genre,
+    get_genre_by_id,
+    update_genre_by_id,
+    delete_genre_by_id,
+    get_genre_books,
+)
+
+router = APIRouter(tags=["genres"])
+
+
+@router.get("/api/genres", response_model=GenresResponse, status_code=200)
+async def get_genres_view(
+    search: Annotated[str, Query()] = "",
+    skip: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=0, le=100)] = 20,
+):
+    db = next(get_db())
+
+    genres = get_genres(db, search, skip, limit)
+
+    response = GenresResponse(
+        limit=limit, skip=skip, search=search, count=len(genres), result=genres
+    )
+
+    return response
+
+
+@router.post("/api/genres", status_code=201)
+async def create_genre_view(data: Annotated[GenreCreate, Body]):
+    db = next(get_db())
+
+    try:
+        genre = create_genre(db=db, name=data.name, description=data.description)
+    except ValueError as e:
+        return HTTPException(status_code=400, detail=str(e))
+
+    response = GenreResponse(
+        id=genre.id, name=genre.name, description=genre.description
+    )
+
+    return response
+
+
+@router.get("/api/genres/{id}")
+async def get_genre_by_id_view(id: Annotated[int, Path(gt=0)]):
+    db = next(get_db())
+
+    try:
+        genre = get_genre_by_id(db=db, id=id)
+    except ValueError as e:
+        return HTTPException(status_code=404, detail=str(e))
+
+    response = GenreResponse(
+        id=genre.id, name=genre.name, description=genre.description
+    )
+
+    return response
+
+
+@router.patch("/api/genres/{id}")
+async def update_genre_by_id_view(
+    id: Annotated[int, Path(gt=0)], data: Annotated[GenreUpdate | None, Body] = None
+):
+    db = next(get_db())
+
+    try:
+        genre = update_genre_by_id(
+            db=db, id=id, name=data.name, description=data.description
+        )
+    except ValueError as e:
+        return HTTPException(status_code=404, detail=str(e))
+
+    response = GenreResponse(id=id, name=genre.name, description=genre.description)
+
+    return response
+
+
+@router.delete("/api/genres/{id}")
+async def delete_genre_by_id_view(id: Annotated[int, Path(gt=0)]):
+    db = next(get_db())
+
+    try:
+        genre = delete_genre_by_id(db=db, id=id)
+    except ValueError as e:
+        return HTTPException(status_code=404, detail=str(e))
+
+    return status.HTTP_204_NO_CONTENT
+
+
+@router.get("/genres/{id}/books")
+async def get_genre_books_view(
+    id: Annotated[int, Path(gt=0)],
+    skip: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=0, le=100)] = 20,
+):
+    db = next(get_db())
+
+    try:
+        genre, books = get_genre_books(db=db, id=id, skip=skip, limit=limit)
+    except ValueError as e:
+        return HTTPException(status_code=404, detail=str(e))
+
+    book_responses = []
+    for book in books:
+        author = AuthorResponse(
+            id=book.author.id,
+            first_name=book.author.first_name,
+            last_name=book.author.last_name,
+            bio=book.author.bio,
+            born_date=book.author.born_date,
+        )
+
+        genres = [
+            GenreResponse(
+                id=bg.genre.id, name=bg.genre.name, description=bg.genre.description
+            )
+            for bg in book.book_genres
+        ]
+
+        book_response = GenreBookItemResponse(
+            id=book.id,
+            title=book.title,
+            published_year=book.published_year,
+            author=author,
+            genres=genres,
+        )
+        book_responses.append(book_response)
+
+    return GenreBookListResponse(
+        limit=limit, skip=skip, count=len(books), result=book_responses
+    )

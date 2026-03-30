@@ -89,7 +89,10 @@ def delete_author_by_id(db: Session, id: int) -> True:
 
     return True
 
-def get_author_books(db: Session, id: int, skip: int=0, limit: int=20) -> tuple[Author, Book]:
+
+def get_author_books(
+    db: Session, id: int, skip: int = 0, limit: int = 20
+) -> tuple[Author, Book]:
     author = get_author_by_id(db, id)
 
     books = db.query(Book).filter(Book.author_id == id).offset(skip).limit(limit).all()

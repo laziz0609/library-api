@@ -2,7 +2,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, Text, SmallInteger, Integer, ForeignKey
 
 from app.database import Base
-from app.models.book_genre import book_genres
 
 
 class Book(Base):
@@ -19,6 +18,6 @@ class Book(Base):
     )
 
     author: Mapped["Author"] = relationship("Author", back_populates="books")
-    genres: Mapped[list["Genre"]] = relationship(
-        "Genre", secondary=book_genres, uselist=True, back_populates="books"
+    book_genres: Mapped[list["BookGenre"]] = relationship(
+        "BookGenre", back_populates="book"
     )

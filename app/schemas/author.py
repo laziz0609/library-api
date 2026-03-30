@@ -50,7 +50,7 @@ class AuthorUpdate(BaseModel):
         if not v.strip():
             raise None
         return v.strip()
-    
+
 
 class AuthorBookResponse(BaseModel):
     id: int
