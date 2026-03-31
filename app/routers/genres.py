@@ -45,10 +45,8 @@ async def get_genres_view(
 async def create_genre_view(data: Annotated[GenreCreate, Body]):
     db = next(get_db())
 
-    try:
-        genre = create_genre(db=db, name=data.name, description=data.description)
-    except ValueError as e:
-        return HTTPException(status_code=400, detail=str(e))
+    
+    genre = create_genre(db=db, name=data.name, description=data.description)
 
     response = GenreResponse(
         id=genre.id, name=genre.name, description=genre.description
@@ -61,10 +59,7 @@ async def create_genre_view(data: Annotated[GenreCreate, Body]):
 async def get_genre_by_id_view(id: Annotated[int, Path(gt=0)]):
     db = next(get_db())
 
-    try:
-        genre = get_genre_by_id(db=db, id=id)
-    except ValueError as e:
-        return HTTPException(status_code=404, detail=str(e))
+    genre = get_genre_by_id(db=db, id=id)
 
     response = GenreResponse(
         id=genre.id, name=genre.name, description=genre.description
@@ -79,28 +74,21 @@ async def update_genre_by_id_view(
 ):
     db = next(get_db())
 
-    try:
-        genre = update_genre_by_id(
+    
+    genre = update_genre_by_id(
             db=db, id=id, name=data.name, description=data.description
         )
-    except ValueError as e:
-        return HTTPException(status_code=404, detail=str(e))
 
     response = GenreResponse(id=id, name=genre.name, description=genre.description)
 
     return response
 
 
-@router.delete("/api/genres/{id}")
+@router.delete("/api/genres/{id}", status_code=204)
 async def delete_genre_by_id_view(id: Annotated[int, Path(gt=0)]):
     db = next(get_db())
-
-    try:
-        genre = delete_genre_by_id(db=db, id=id)
-    except ValueError as e:
-        return HTTPException(status_code=404, detail=str(e))
-
-    return status.HTTP_204_NO_CONTENT
+    
+    genre = delete_genre_by_id(db=db, id=id)
 
 
 @router.get("/genres/{id}/books")
@@ -111,10 +99,7 @@ async def get_genre_books_view(
 ):
     db = next(get_db())
 
-    try:
-        genre, books = get_genre_books(db=db, id=id, skip=skip, limit=limit)
-    except ValueError as e:
-        return HTTPException(status_code=404, detail=str(e))
+    genres, books = get_genre_books(db=db, id=id, skip=skip, limit=limit)
 
     book_responses = []
     for book in books:

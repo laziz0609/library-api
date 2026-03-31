@@ -20,6 +20,7 @@ from app.schemas.author import (
     AuthorBooksResponse,
 )
 from app.schemas.genre import GenreResponse
+from app.models import Genre
 
 router = APIRouter(tags=["authors"])
 
@@ -68,10 +69,7 @@ async def create_author_view(data: Annotated[Authorcreate, Body]):
 async def get_author_by_id_view(id: Annotated[int, Path(gt=0)]):
     db = next(get_db())
 
-    try:
-        author = get_author_by_id(db=db, id=id)
-    except ValueError as e:
-        return HTTPException(status_code=404, detail=str(e))
+    author = get_author_by_id(db=db, id=id)
 
     response = AuthorResponse(
         id=author.id,
@@ -90,8 +88,8 @@ async def update_author_by_id_view(
 ):
     db = next(get_db())
 
-    try:
-        author = update_author_by_id(
+    
+    author = update_author_by_id(
             db=db,
             id=id,
             first_name=data.first_name,
@@ -99,8 +97,6 @@ async def update_author_by_id_view(
             bio=data.bio,
             born_date=data.born_date,
         )
-    except ValueError as e:
-        return HTTPException(status_code=404, detail=str(e))
 
     response = AuthorResponse(
         id=author.id,
@@ -113,16 +109,11 @@ async def update_author_by_id_view(
     return response
 
 
-@router.delete("/api/authors/{id}")
+@router.delete("/api/authors/{id}", status_code=204)
 async def delete_author_by_id_view(id: Annotated[int, Path(gt=0)]):
     db = next(get_db())
 
-    try:
-        author = delete_author_by_id(db=db, id=id)
-    except ValueError as e:
-        return HTTPException(status_code=404, detail=str(e))
-
-    return status.HTTP_204_NO_CONTENT
+    author = delete_author_by_id(db=db, id=id)
 
 
 @router.get("/api/authors/{id}/books")
@@ -133,10 +124,7 @@ async def get_author_books_view(
 ):
     db = next(get_db())
 
-    try:
-        author, books = get_author_books(db=db, id=id, skip=skip, limit=limit)
-    except ValueError as e:
-        return HTTPException(status_code=404, detail=str(e))
+    author, books = get_author_books(db=db, id=id, skip=skip, limit=limit)
 
     author = AuthorResponse(
         id=author.id,
@@ -148,9 +136,12 @@ async def get_author_books_view(
 
     book_responses = []
     for book in books:
+        book_genres = book.book_genres
+        genres: list[Genre] = [b.genre for b in book_genres]
+        
         genres = [
             GenreResponse(id=g.id, name=g.name, description=g.description)
-            for g in book.genres
+            for g in genres
         ]
 
         book_response = AuthorBookResponse(

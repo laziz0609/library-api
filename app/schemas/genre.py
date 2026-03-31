@@ -36,11 +36,11 @@ class GenreUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
 
-    @field_validator("name")
+    @field_validator("name", "description")
     @classmethod
     def validate(cls, value: str):
         if not value.strip():
-            raise ValueError("Cannot be empty or whitespace only")
+            return None
         return value.strip()
 
 
