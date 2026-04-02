@@ -16,6 +16,7 @@ class Book(Base):
     author_id: Mapped[int] = mapped_column(ForeignKey("authors.id", ondelete="CASCADE"))
 
     author: Mapped["Author"] = relationship(back_populates="books")
+    genres: Mapped[list["Genre"]] = relationship(back_populates="books", secondary='book_genres')
 
     def __str__(self):
         return f"{self.id}. {self.title}"

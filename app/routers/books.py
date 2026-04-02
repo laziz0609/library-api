@@ -9,7 +9,7 @@ from app.crud.book import get_books_by_auhtor
 from app.schemas.book import BookResponse
 
 
-router = APIRouter(tags=["authors"])
+router = APIRouter(tags=["books"])
 
 
 @router.get(
