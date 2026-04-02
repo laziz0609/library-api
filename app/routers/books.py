@@ -1,6 +1,7 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Query, Path, Body
+from fastapi import APIRouter, Query, Path, Body, Depends
+from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
 from app.crud.book import (
@@ -71,10 +72,8 @@ async def get_books_view(
     )
 
 
-@router.post("/api/books", response_model=BookItemResponse, status_code=200)
-async def create_book_view(data: Annotated[CreateBook, Body]):
-    db = next(get_db())
-
+@router.post("/api/books", response_model=BookItemResponse, status_code=201)
+async def create_book_view(db: Annotated[Session, Depends(get_db)], data: Annotated[CreateBook, Body()]):
     book = create_book(
         db=db,
         title=data.title,
@@ -86,30 +85,7 @@ async def create_book_view(data: Annotated[CreateBook, Body]):
         pages=data.pages,
     )
 
-    author = AuthorResponse(
-        id=book.author.id,
-        first_name=book.author.first_name,
-        last_name=book.author.last_name,
-        bio=book.author.bio,
-        born_date=book.author.born_date,
-    )
-
-    genres = [
-        GenreResponse(
-            id=bg.genre.id, name=bg.genre.name, description=bg.genre.description
-        )
-        for bg in book.book_genres
-    ]
-
-    book_response = BookItemResponse(
-        id=book.id,
-        title=book.title,
-        published_year=book.published_year,
-        author=author,
-        genres=genres,
-    )
-
-    return book_response
+    return book
 
 
 @router.get("/api/books/{id}")
