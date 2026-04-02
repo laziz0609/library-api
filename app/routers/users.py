@@ -1,14 +1,17 @@
 from typing import Annotated, List
 
 from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from sqlalchemy.orm import Session
 
 from app.schemas.user import UserRegister, UserResponse
 from app.dependencies import get_db
 from app.crud.user import get_user_by_username, create_user, get_users
-from app.security import hash_password
+from app.security import hash_password, verify
 
 router = APIRouter(tags=["users"])
+
+security = HTTPBasic()
 
 
 @router.post("/api/register", response_model=UserResponse, status_code=201)
@@ -29,5 +32,21 @@ async def register_view(
 
 
 @router.get("/api/users", response_model=List[UserResponse])
-async def register_view(db: Annotated[Session, Depends(get_db)]):
+async def get_users_view(db: Annotated[Session, Depends(get_db)]):
     return get_users(db)
+
+
+@router.post("/api/login")
+async def login_view(
+    credentials: Annotated[HTTPBasicCredentials, Depends(security)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    user = get_user_by_username(db, credentials.username)
+
+    if not user:
+        raise HTTPException(status_code=404, detail="user not found.")
+
+    if not verify(credentials.password, user.hash_password):
+        raise HTTPException(status_code=401, detail="username or password is wrong.")
+
+    return {"message": "you have been loggen in seccessfully."}
