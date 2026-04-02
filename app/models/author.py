@@ -18,7 +18,7 @@ class Author(Base):
 
     books: Mapped[List["Book"]] = relationship(back_populates="author")
 
-    def __str__(self):
+    def __repr__(self):
         return f"{self.id}. {self.full_name}"
 
     @property
