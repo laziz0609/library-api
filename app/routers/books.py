@@ -83,8 +83,15 @@ async def get_books_view(
 
 @router.post("/api/books", response_model=BookItemResponse, status_code=201)
 async def create_book_view(
-    db: Annotated[Session, Depends(get_db)], data: Annotated[CreateBook, Body()]
+    token: Annotated[str, Depends(oauth2_scheme)],
+    db: Annotated[Session, Depends(get_db)],
+    data: Annotated[CreateBook, Body()],
 ):
+    payload = verify_token(token)
+
+    if payload is None:
+        raise HTTPException(status_code=401, detail="invalid token.")
+
     book = create_book(
         db=db,
         title=data.title,
@@ -100,8 +107,15 @@ async def create_book_view(
 
 
 @router.get("/api/books/{id}")
-async def get_genre_by_id_view(id: Annotated[int, Path(gt=0)]):
-    db = next(get_db())
+async def get_genre_by_id_view(
+    id: Annotated[int, Path(gt=0)],
+    token: Annotated[str, Depends(oauth2_scheme)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    payload = verify_token(token)
+
+    if payload is None:
+        raise HTTPException(status_code=401, detail="invalid token.")
 
     book = get_book_by_id(db, id)
 
@@ -133,9 +147,15 @@ async def get_genre_by_id_view(id: Annotated[int, Path(gt=0)]):
 
 @router.patch("/api/books/{id}")
 async def update_book_by_id_view(
-    id: Annotated[int, Path(gt=0)], data: Annotated[UpdateBook, Body] = None
+    id: Annotated[int, Path(gt=0)],
+    token: Annotated[str, Depends(oauth2_scheme)],
+    db: Annotated[Session, Depends(get_db)],
+    data: Annotated[UpdateBook, Body] = None,
 ):
-    db = next(get_db())
+    payload = verify_token(token)
+
+    if payload is None:
+        raise HTTPException(status_code=401, detail="invalid token.")
 
     book = update_book_by_id(
         db=db,
@@ -176,6 +196,14 @@ async def update_book_by_id_view(
 
 
 @router.delete("/api/books/{id}", status_code=204)
-async def delete_book_by_id_view(id: Annotated[int, Path(gt=0)]):
-    db = next(get_db())
+async def delete_book_by_id_view(
+    id: Annotated[int, Path(gt=0)],
+    token: Annotated[str, Depends(oauth2_scheme)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    payload = verify_token(token)
+
+    if payload is None:
+        raise HTTPException(status_code=401, detail="invalid token.")
+
     delete_book_by_id(db, id)
