@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.schemas.user import UserRegister, UserResponse
 from app.dependencies import get_db
 from app.crud.user import get_user_by_username, create_user, get_users
-from app.security import hash_password, verify
+from app.security import hash_password, verify_password, generate_token
 
 router = APIRouter(tags=["users"])
 
@@ -46,7 +46,9 @@ async def login_view(
     if not user:
         raise HTTPException(status_code=404, detail="user not found.")
 
-    if not verify(credentials.password, user.hash_password):
+    if not verify_password(credentials.password, user.hash_password):
         raise HTTPException(status_code=401, detail="username or password is wrong.")
 
-    return {"message": "you have been loggen in seccessfully."}
+    token = generate_token({"username": user.username})
+
+    return {"token": token}
